@@ -1,109 +1,118 @@
-# Enable Loudness Equalisation
-Automatically adds and enables loudness equalisation to any playback device.
+# Bật cân bằng âm lượng trên Windows
 
-Only works if your selected driver supports enhancements for speakers, but didn't expose this support for any other output devices. This script will  expose any existing support, but can not work if the driver doesn't ship any.
+Dự án này thêm và bật **Loudness Equalisation** (cân bằng âm lượng) cho thiết bị phát âm thanh được chọn.
 
-| before execution | after execution |
-| --------------- | -------------- |
-| ![Enhancements Missing](EnhancementsMissing.png)  | ![Enhancements Added](EnhancementsAdded.png)  |
+Script chỉ hoạt động khi trình điều khiển âm thanh đã có sẵn hiệu ứng này nhưng chưa hiển thị tùy chọn cho thiết bị đó. Script không thể bổ sung hiệu ứng nếu trình điều khiển không hỗ trợ.
 
-If you are looking for bass boost, you can use the more complex version of this script https://github.com/Falcosc/enable-bass-boost
+| Trước khi chạy | Sau khi chạy |
+| --- | --- |
+| ![Chưa có mục Enhancements](EnhancementsMissing.png) | ![Đã có mục Enhancements](EnhancementsAdded.png) |
 
-# How to Download and Run
-run in powershell
-```
-Invoke-WebRequest https://raw.githubusercontent.com/Falcosc/enable-loudness-equalisation/main/EnableLoudness.ps1 -OutFile $env:HOMEPATH\EnableLoudness.ps1
+Nếu cần thêm **Bass Boost**, xem [phiên bản có nhiều hiệu ứng hơn](https://github.com/Falcosc/enable-bass-boost).
+
+## Tải và chạy
+
+1. Xác định tên thiết bị phát âm thanh trong phần cài đặt âm thanh của Windows. Các ví dụ dưới đây dùng `BE279`; hãy thay bằng tên thiết bị của bạn (ít nhất 3 ký tự).
+2. Mở **Windows PowerShell** bằng **Run as administrator**. Script cần quyền quản trị để sửa Registry và khởi động lại dịch vụ âm thanh.
+3. Chạy các lệnh sau:
+
+```powershell
+$appDir = Join-Path $env:ProgramFiles 'EnableLoudness'
+New-Item -ItemType Directory -Path $appDir -Force | Out-Null
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/HoangECG/enable-loudless/main/EnableLoudness.ps1' -OutFile (Join-Path $appDir 'EnableLoudness.ps1')
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-. $env:HOMEPATH\EnableLoudness.ps1
-```
-Or if you want to set the fastest possible time until sound level gets adjusted (unpleasend to daily usage but gives a competitive edge on video games where dynamic audiolevel adjustments are not banned)
-```
-. $env:HOMEPATH\EnableLoudness.ps1 -releaseTime 2
+& (Join-Path $appDir 'EnableLoudness.ps1') -playbackDeviceName 'BE279'
 ```
 
-## Using the Toggle Version with GUI
-This script includes a toggle version with an AutoHotkey (AHK) GUI script for easier use:
-1. **Install [AutoHotkey v2.0+](https://www.autohotkey.com/)** if you haven't already.
-2. Save the `ToggleGui.ahk` script in the same folder as `EnableLoudness.ps1`.
-3. Run `ToggleGui.ahk` to open a simple window with a button that toggles loudness equalisation when clicked.
+`Set-ExecutionPolicy` ở trên thay đổi chính sách chạy script cho **tài khoản hiện tại**, không chỉ cho dự án này. Hãy kiểm tra nội dung file tải về trước khi chạy; nhánh `main` có thể thay đổi.
 
-### Environment Variables for the Toggle Script
-For the toggle script to work correctly, the following environment variables must be set:
-- **`HeadphonesName`**: Specifies the playback device name. This should match the beginning of the device name as shown in your system.
-  - Example: 
-    ```cmd
-    setx HeadphonesName "YourDeviceName"
-    ```
-- **`ReleaseTime`**: Sets the release time for audio level adjustment, from 2 (fastest) to 7 (slowest).
-  - Example:
-    ```cmd
-    setx ReleaseTime "4"
-    ```
+Thời gian điều chỉnh âm lượng mặc định là `4`. Để đặt mức nhanh nhất (`2`), chạy trong cửa sổ PowerShell quản trị:
 
-> **Note**: Setting these variables ensures the toggle script works with the intended playback device and adjustment speed.
+```powershell
+& (Join-Path $appDir 'EnableLoudness.ps1') -playbackDeviceName 'BE279' -releaseTime 2
+```
 
-### How to Set Environment Variables
-1. Open Command Prompt as an administrator.
-2. Use `setx` to set the environment variables:
-   ```cmd
-   setx HeadphonesName "YourDeviceName"
-   setx ReleaseTime "4"
-   ```
-3. Restart Command Prompt or PowerShell to apply the changes, or reboot your system for a global update.
+`-releaseTime` nhận giá trị từ `2` đến `7`. Mức `2` có thể gây khó chịu khi sử dụng hằng ngày.
 
-# When is it needed?
-- HDMI, Display Port, Digital Optical Output playback devices usually doesn't have it
-- if you can not find an audio driver version which adds loudness equalisation to any of your playback devices
-- you can't enable it globally in your driver
+## Bật hoặc tắt bằng giao diện
 
-# Why does it need to be scripted?
-- if you want to toggle it via hotkey
-- updates are messing with your audio drivers
-- some use cases lead into re-registration of HDMI or DisplayPort playback devices, which will purge your settings every time
+Giao diện dùng [AutoHotkey v2.0 trở lên](https://www.autohotkey.com/) và hai file **`ToggleGui.ahk`**, **`ToggleLoudness.ps1`**. Cần đặt hai file trong cùng thư mục. Để tải chúng vào thư mục đã tạo ở trên, chạy trong PowerShell quản trị:
 
-# What does it do?
-1. search for all active playback devices by name in registry
-1. imports audio enhancement settings
-    - PreMixEffectClsid and PostMixEffectClsid
-    - StreamEffectClsid and ModeEffectClsid
-    - Enhancement Tab UI defnition
-    - loudness equalisation flag
-    - release time value
-1. restarts audio service to apply changed registry values
+```powershell
+$appDir = Join-Path $env:ProgramFiles 'EnableLoudness'
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/HoangECG/enable-loudless/main/ToggleGui.ahk' -OutFile (Join-Path $appDir 'ToggleGui.ahk')
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/HoangECG/enable-loudless/main/ToggleLoudness.ps1' -OutFile (Join-Path $appDir 'ToggleLoudness.ps1')
+```
 
-# Known Issues
-- all setting flags stored in `fc52a749-4be9-4510-896e-966ba6525980` get overwritten, instead of just enabling loudness equalisation
-- flags key are different across Windows versions `fc52a749-4be9-4510-896e-966ba6525980` used in this script works for Windows 11, maybe 10 as well.
-- If the playback device gets re-detected the audio service reboot maybe sets volume to default 100%
-- Sound Settings UI shows 0% volume if it was open during restart (reopening fixes it)
-- Restarting audio service after sleep does break the taskbar tray icon volume slider in some situations
-    - mediakeys and sound settings UI volume controll still works fine
-    - tray icon slider gets fixed with full reboot
-- does not work if your driver doesn't have any enhancements, try a different one
-- incompatible devices will be unable to output audio until settings are restored
+Trước khi mở GUI, đặt hai biến môi trường **cho tài khoản sẽ chạy GUI**. Mở **Command Prompt (CMD)** thông thường; không cần quyền quản trị:
 
-# Restore Settings
-Most drivers restore settings if the registry key get removed, that would be the manual way to restore.
-Over UI we found the following way to reset your settings [#156](https://github.com/Falcosc/enable-loudness-equalisation/issues/28)
-1. Device Manager
-1. Sound, video and game controllers
-1. Right-click on your Audio Device
-1. Uninstall device, DO NOT check “Delete driver software”
-1. Reboot
+```cmd
+setx HeadphonesName "BE279"
+setx ReleaseTime "4"
+```
 
-# Install as Task
-1. Open Task Scheduler
-1. Action -> Create Task...
-1. General -> Run with highest privileges
-  
-    ![Run with highest privileges](TaskAdmin.png)
-1. Triggers -> New...
-  
-    ![Additional Triggers](TaskTrigger.png)
-1. Actions -> New...
-    - Action: Start a program
-    - Program: powershell
-    - Add arguments: `-WindowStyle hidden -f %HOMEPATH%\EnableLoudness.ps1 -playbackDeviceName BE279`
-1. To test it you could use an invalid DeviceName like "-playbackDeviceName XXX" then you will see an error message pop-up after login
-  
-    ![Test Error](ErrorTest.png)
+- `HeadphonesName`: chuỗi để tìm thiết bị phát âm thanh. Hãy dùng phần tên đủ đặc trưng; tránh ký tự đại diện như `^.*$` hoặc các dấu đặc biệt của biểu thức chính quy vì script có thể chọn nhầm thiết bị.
+- `ReleaseTime`: thời gian điều chỉnh, từ `2` (nhanh nhất) đến `7` (chậm nhất).
+
+`setx` chỉ có hiệu lực với tiến trình mở **sau** khi đặt biến. Đóng GUI nếu đang mở rồi chạy `ToggleGui.ahk`. Nếu GUI vẫn không nhận biến, hãy đăng xuất và đăng nhập lại. GUI sẽ yêu cầu xác nhận UAC để chạy với quyền quản trị; nhấn **Toggle** để đổi trạng thái. Nếu UAC yêu cầu đăng nhập bằng một tài khoản quản trị khác, hãy đặt biến môi trường cho tài khoản đó.
+
+## Khi nào cần dùng?
+
+- Thiết bị qua HDMI, DisplayPort hoặc cổng quang không hiển thị tùy chọn cân bằng âm lượng.
+- Không tìm được phiên bản trình điều khiển có tùy chọn này cho thiết bị của bạn.
+- Trình điều khiển không cho bật hiệu ứng chung cho mọi thiết bị đầu ra.
+
+Script cũng hữu ích khi bản cập nhật hoặc việc Windows nhận diện lại thiết bị HDMI/DisplayPort làm mất các thiết lập âm thanh, hoặc khi bạn muốn bật/tắt hiệu ứng nhanh.
+
+## Script làm gì?
+
+1. Tìm các thiết bị phát âm thanh đang hoạt động trong Registry theo chuỗi tên được cung cấp.
+2. Ghi các thiết lập hiệu ứng âm thanh: `PreMixEffectClsid`, `PostMixEffectClsid`, `StreamEffectClsid`, `ModeEffectClsid`, mục **Enhancements**, cờ cân bằng âm lượng và `releaseTime`.
+3. Khởi động lại dịch vụ âm thanh để áp dụng thay đổi.
+
+## Vấn đề đã biết
+
+- Script ghi đè **toàn bộ** cờ trong khóa `fc52a749-4be9-4510-896e-966ba6525980`, không chỉ cờ cân bằng âm lượng.
+- Khóa cờ có thể khác giữa các phiên bản Windows. Khóa trong script dùng cho Windows 11; khả năng hoạt động trên Windows 10 chưa được xác nhận.
+- Khi Windows nhận diện lại thiết bị, âm lượng có thể trở về `100%`. Hãy kiểm tra mức âm lượng trước khi phát âm thanh.
+- Nếu ứng dụng **Sound Settings** đang mở lúc dịch vụ âm thanh khởi động lại, ứng dụng có thể hiển thị âm lượng `0%`; đóng và mở lại để cập nhật.
+- Khởi động lại dịch vụ âm thanh sau khi máy thức dậy có thể làm thanh âm lượng ở khay hệ thống ngừng hoạt động. Phím âm lượng và ứng dụng cài đặt âm thanh vẫn dùng được; khởi động lại máy sẽ khắc phục thanh trượt.
+- Script không hoạt động nếu trình điều khiển không có hiệu ứng âm thanh. Với thiết bị không tương thích, âm thanh có thể ngừng phát cho đến khi khôi phục cài đặt.
+- Các script hiện dùng file Registry tạm có tên cố định trong `%TEMP%` trước khi nhập bằng quyền quản trị. Tiến trình khác cùng tài khoản có thể sửa file trước lúc nhập và làm thay đổi Registry ngoài dự kiến. Tránh tạo tác vụ tự động quyền cao trên tài khoản chạy phần mềm không tin cậy cho đến khi script được sửa.
+
+## Khôi phục cài đặt
+
+Nếu đã tạo tác vụ tự động ở phần dưới, **tắt tác vụ trước** để thiết lập không bị áp dụng lại sau khi đăng nhập hoặc mở khóa máy.
+
+Một số trình điều khiển có thể tự tạo lại thiết lập sau khi xóa khóa hiệu ứng, nhưng việc sửa Registry trực tiếp dễ xóa nhầm cài đặt khác. Ưu tiên cách thực hiện qua giao diện Windows được nêu trong [thảo luận này](https://github.com/Falcosc/enable-loudness-equalisation/issues/28):
+
+1. Mở **Device Manager**.
+2. Mở **Sound, video and game controllers**.
+3. Nhấp phải vào thiết bị âm thanh và chọn **Uninstall device**.
+4. **Không** chọn **Delete the driver software for this device**.
+5. Khởi động lại máy.
+
+## Tự động chạy bằng Task Scheduler
+
+Hướng dẫn này giả định `EnableLoudness.ps1` đã được tải vào `C:\Program Files\EnableLoudness` như phần **Tải và chạy**. Thư mục chạy tác vụ quyền cao nên chỉ cho quản trị viên sửa file. Hãy tạo tác vụ bằng tài khoản quản trị; **Run with highest privileges** không cấp quyền quản trị cho tài khoản thường.
+
+1. Mở **Task Scheduler** và chọn **Action → Create Task...**.
+2. Trong **General**, chọn **Run with highest privileges**. Nếu muốn thấy thông báo lỗi khi thử tác vụ, chọn **Run only when user is logged on**.
+
+   ![Chạy tác vụ với quyền cao nhất](TaskAdmin.png)
+
+3. Trong **Triggers**, chọn **New...** và thêm **At log on** cho tài khoản của bạn. Có thể thêm **On workstation unlock** nếu muốn áp dụng lại khi mở khóa máy.
+
+   ![Các thời điểm kích hoạt tác vụ](TaskTrigger.png)
+
+4. Trong **Actions**, chọn **New...** rồi điền:
+
+   - **Action:** `Start a program`
+   - **Program/script:** `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`
+   - **Add arguments:** `-NoProfile -WindowStyle Hidden -File "C:\Program Files\EnableLoudness\EnableLoudness.ps1" -playbackDeviceName "BE279"`
+
+   Thay `BE279` bằng tên thiết bị của bạn. Nếu Windows hoặc thư mục cài đặt nằm ở ổ khác, dùng đường dẫn thực tế trên máy.
+
+5. Lưu tác vụ. Có thể nhấp phải tác vụ và chọn **Run** để kiểm tra ngay. Nếu thử với tên không tồn tại, chẳng hạn `XXX`, script sẽ hiện thông báo lỗi khi tác vụ chạy trong phiên đăng nhập của bạn.
+
+   ![Ví dụ thông báo khi không tìm thấy thiết bị](ErrorTest.png)
